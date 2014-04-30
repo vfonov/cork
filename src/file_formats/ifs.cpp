@@ -138,9 +138,9 @@ inline bool read_vertex(ifstream &in, Vec3d &data)
 inline bool write_vertex(ofstream &out, const Vec3d &data)
 {
     // data is coerced from double to float automatically here
-    bool result =   write_float32(out, data.x) &&
-                    write_float32(out, data.y) &&
-                    write_float32(out, data.z);
+    bool result =   write_float32(out, static_cast<float32>(data.x)) &&
+                    write_float32(out, static_cast<float32>(data.y)) &&
+                    write_float32(out, static_cast<float32>(data.z));
     return result;
 }
 
@@ -274,8 +274,10 @@ int readIFS(string filename, FileMesh *data)
     uint32 num_vertices;
     if(!read_uint32(in, num_vertices)) return 1;
     data->vertices.resize(num_vertices);
-    for(auto &v : data->vertices) {
-        if(!read_vertex(in, v.pos)) return 1;
+	for(unsigned ind=0; ind != data->vertices.size(); ++ind)
+	{
+		if(!read_vertex(in, data->vertices[ind].pos))
+			return 1;
     }
     
     // TRIANGLES
@@ -284,8 +286,10 @@ int readIFS(string filename, FileMesh *data)
     uint32 num_tris;
     if(!read_uint32(in, num_tris)) return 1;
     data->triangles.resize(num_tris);
-    for(auto &tri : data->triangles) {
-        if(!read_triangle(in, tri)) return 1;
+	for(unsigned ind=0; ind != data->triangles.size(); ++ind)
+	{
+		if(!read_triangle(in, data->triangles[ind]))
+			return 1;
     }
     
     // TEXTURECOORD
@@ -318,16 +322,20 @@ int writeIFS(string filename, FileMesh *data)
     if(!writeString(out,"VERTICES")) return 1;
     uint32 num_vertices = data->vertices.size();
     if(!write_uint32(out, num_vertices)) return 1;
-    for(const auto &v : data->vertices) {
-        if(!write_vertex(out, v.pos)) return 1;
+	for(size_t ind=0; ind != data->vertices.size(); ++ind)
+	{
+		if(! write_vertex(out, data->vertices[ind].pos))
+			return 1;
     }
     
     // TRIANGLES
     if(!writeString(out,"TRIANGLES")) return 1;
     uint32 num_tris = data->triangles.size();
     if(!write_uint32(out, num_tris)) return 1;
-    for(const auto &tri : data->triangles) {
-        if(!write_triangle(out, tri)) return 1;
+	for(size_t ind=0; ind != data->triangles.size(); ++ind)
+	{
+		if(! write_triangle(out, data->triangles[ind]))
+			return 1;
     }
     
     // TEXTURECOORD

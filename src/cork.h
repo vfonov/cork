@@ -38,6 +38,11 @@ struct CorkTriMesh
     uint    n_vertices;
     uint    *triangles;
     float   *vertices;
+
+	CorkTriMesh()
+		: triangles(0)
+		, vertices(0)
+	{}
 };
 
 void freeCorkTriMesh(CorkTriMesh *mesh);
@@ -71,4 +76,3 @@ void computeSymmetricDifference(
 //  curve of intersection between the two surfaces is made explicit,
 //  such that the two surfaces are now connected.
 void resolveIntersections(CorkTriMesh in0, CorkTriMesh in1, CorkTriMesh *out);
-

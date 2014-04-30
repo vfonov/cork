@@ -25,7 +25,7 @@
 // +-------------------------------------------------------------------------
 #pragma once
 
-#include "vec.h"
+#include "../math/vec.h"
 
 namespace Empty3d {
 
@@ -78,5 +78,3 @@ void cell3d0toPointExact(SmVector3 &point,
                          const Metric3d2 &metric);
 */
 } // end namespace Empty3d
-
-

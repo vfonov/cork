@@ -27,6 +27,8 @@
 
 #include <queue>
 
+enum TriCode { KEEP_TRI, DELETE_TRI, FLIP_TRI };
+
 template<class VertData, class TriData>
 class Mesh<VertData,TriData>::BoolProblem
 {
@@ -39,9 +41,8 @@ public:
     void doSetup(Mesh &rhs);
     
     // choose what to remove
-    enum TriCode { KEEP_TRI, DELETE_TRI, FLIP_TRI };
     void doDeleteAndFlip(
-        std::function<TriCode(byte bool_alg_data)> classify
+		TriCode (*lambda)(byte data)
     );
 
 private: // methods
@@ -79,7 +80,9 @@ private: // methods
             if(entry.data.is_isct) {
                 ShortVec<uint, 2> tid0s;
                 ShortVec<uint, 2> tid1s;
-                for(uint tid : entry.tids) {
+				for(size_t ind=0; ind!=entry.tids.size(); ++ind)
+				{
+					const uint& tid = entry.tids[ind];
                     if(boolData(tid) & 1)
                         tid1s.push_back(tid);
                     else
@@ -112,7 +115,9 @@ private: // methods
         
         int winding = 0;
         // pass all triangles over ray
-        for(Tri &tri : mesh->tris) {
+		for(size_t ind=0; ind!=mesh->tris.size(); ++ind)
+		{
+			const Tri &tri = mesh->tris[ind];
             // ignore triangles from the same operand surface
             if((tri.data.bool_alg_data & 1) == operand)   continue;
             
@@ -207,12 +212,16 @@ void Mesh<VertData,TriData>::BoolProblem::doSetup(
     
     // find the "best" triangle in each component,
     // and ray cast to determine inside-ness vs. outside-ness
-    for(auto &comp : components) {
+    for (size_t ind=0; ind != components.size(); ++ind)
+	{
         // find max according to score
+		const std::vector<uint>& comp = components[ind];
         uint best_tid = comp[0];
         double best_area = 0.0;
         // SEARCH
-        for(uint tid : comp) {
+        for(size_t ind2=0; ind2 != comp.size(); ++ind2)
+		{
+			const uint& tid = comp[ind2];
             Vec3d va = mesh->verts[mesh->tris[tid].a].pos;
             Vec3d vb = mesh->verts[mesh->tris[tid].b].pos;
             Vec3d vc = mesh->verts[mesh->tris[tid].c].pos;
@@ -246,7 +255,9 @@ void Mesh<VertData,TriData>::BoolProblem::doSetup(
                 auto &entry = ecache(a,b);
                 byte inside_sig = boolData(curr_tid) & 2;
                 if(entry.data.is_isct)  inside_sig ^= 2;
-                for(uint tid : entry.tids) {
+                for(size_t ind=0; ind!=entry.tids.size(); ++ind)
+				{
+					const uint& tid = entry.tids[ind];
                     if(visited[tid])                    continue;
                     if((boolData(tid)&1) != operand)    continue;
                     
@@ -262,12 +273,13 @@ void Mesh<VertData,TriData>::BoolProblem::doSetup(
 
 template<class VertData, class TriData>
 void Mesh<VertData,TriData>::BoolProblem::doDeleteAndFlip(
-    std::function<TriCode(byte bool_alg_data)> classify
+	TriCode(*classify)(byte data)
 ) {
     TopoCache topocache(mesh);
     
     std::vector<Tptr> toDelete;
-    topocache.tris.for_each([&](Tptr tptr) {
+	for (Tptr tptr = topocache.tris.getFirst(); tptr != NULL; tptr = topocache.tris.getNext(tptr))
+	{
         TriCode code = classify(boolData(tptr->ref));
         switch(code) {
         case DELETE_TRI:
@@ -280,10 +292,11 @@ void Mesh<VertData,TriData>::BoolProblem::doDeleteAndFlip(
         default:
             break;
         }
-    });
+    }
     
-    for(Tptr tptr : toDelete) {
-        topocache.deleteTri(tptr);
+    for(size_t ind=0; ind!=toDelete.size(); ++ind)
+	{
+		topocache.deleteTri(toDelete[ind]);
     }
     
     topocache.commit();
@@ -291,39 +304,52 @@ void Mesh<VertData,TriData>::BoolProblem::doDeleteAndFlip(
 
 
 
+static TriCode lambda1(byte data)
+{
+	if((data & 2) == 2)     // part of op 0/1 INSIDE op 1/0
+		return DELETE_TRI;
+	else                    // part of op 0/1 OUTSIDE op 1/0
+		return KEEP_TRI;
+};
 
 
 template<class VertData, class TriData>
 void Mesh<VertData,TriData>::boolUnion(Mesh &rhs)
 {
     BoolProblem bprob(this);
-    
+
     bprob.doSetup(rhs);
-    
-    bprob.doDeleteAndFlip([](byte data) -> typename BoolProblem::TriCode {
-        if((data & 2) == 2)     // part of op 0/1 INSIDE op 1/0
-            return BoolProblem::DELETE_TRI;
-        else                    // part of op 0/1 OUTSIDE op 1/0
-            return BoolProblem::KEEP_TRI;
-    });
+
+	bprob.doDeleteAndFlip(lambda1);
+}
+
+static TriCode lambda2(byte data)
+{
+        if(data == 2 ||         // part of op 0 INSIDE op 1
+           data == 1)           // part of op 1 OUTSIDE op 0
+            return DELETE_TRI;
+        else if(data == 3)      // part of op 1 INSIDE op 1
+            return FLIP_TRI;
+        else                    // part of op 0 OUTSIDE op 1
+            return KEEP_TRI;
 }
 
 template<class VertData, class TriData>
 void Mesh<VertData,TriData>::boolDiff(Mesh &rhs)
 {
     BoolProblem bprob(this);
-    
+
     bprob.doSetup(rhs);
-    
-    bprob.doDeleteAndFlip([](byte data) -> typename BoolProblem::TriCode {
-        if(data == 2 ||         // part of op 0 INSIDE op 1
-           data == 1)           // part of op 1 OUTSIDE op 0
-            return BoolProblem::DELETE_TRI;
-        else if(data == 3)      // part of op 1 INSIDE op 1
-            return BoolProblem::FLIP_TRI;
-        else                    // part of op 0 OUTSIDE op 1
-            return BoolProblem::KEEP_TRI;
-    });
+
+    bprob.doDeleteAndFlip(lambda2);
+}
+
+static TriCode lambda3(byte data)
+{
+        if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
+            return DELETE_TRI;
+        else                    // part of op 0/1 INSIDE op 1/0
+            return KEEP_TRI;
 }
 
 template<class VertData, class TriData>
@@ -333,40 +359,23 @@ void Mesh<VertData,TriData>::boolIsct(Mesh &rhs)
     
     bprob.doSetup(rhs);
     
-    bprob.doDeleteAndFlip([](byte data) -> typename BoolProblem::TriCode {
+    bprob.doDeleteAndFlip(lambda3);
+}
+
+static TriCode lambda4(byte data)
+{
         if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
-            return BoolProblem::DELETE_TRI;
+            return KEEP_TRI;
         else                    // part of op 0/1 INSIDE op 1/0
-            return BoolProblem::KEEP_TRI;
-    });
+            return FLIP_TRI;
 }
 
 template<class VertData, class TriData>
 void Mesh<VertData,TriData>::boolXor(Mesh &rhs)
 {
     BoolProblem bprob(this);
-    
+
     bprob.doSetup(rhs);
-    
-    bprob.doDeleteAndFlip([](byte data) -> typename BoolProblem::TriCode {
-        if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
-            return BoolProblem::KEEP_TRI;
-        else                    // part of op 0/1 INSIDE op 1/0
-            return BoolProblem::FLIP_TRI;
-    });
+
+	bprob.doDeleteAndFlip(lambda4);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

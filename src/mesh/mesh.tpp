@@ -26,12 +26,12 @@
 #pragma once
 
 #include <algorithm>
-#include "unsafeRayTriIsct.h"
+#include "../isct/unsafeRayTriIsct.h"
 #include <cfloat>
 #include <cmath>
 #include <sstream>
 
-#include "unionFind.h"
+#include "../util/unionFind.h"
 
 // constructors
 template<class VertData, class TriData>
@@ -195,16 +195,17 @@ bool Mesh<VertData,TriData>::isClosed()
     });
     // count up how many times each edge is encountered in one
     // orientation vs. the other
-    for(Tri &tri : tris) {
-        chains(tri.a, tri.b).data ++;
-        chains(tri.b, tri.a).data --;
-        
-        chains(tri.b, tri.c).data ++;
-        chains(tri.c, tri.b).data --;
-        
-        chains(tri.c, tri.a).data ++;
-        chains(tri.a, tri.c).data --;
-    }
+	for(size_t ind=0; ind != tris.size(); ++ind)
+	{
+		chains(tris[ind].a, tris[ind].b).data ++;
+		chains(tris[ind].b, tris[ind].a).data --;
+
+		chains(tris[ind].b, tris[ind].c).data ++;
+		chains(tris[ind].c, tris[ind].b).data --;
+
+		chains(tris[ind].c, tris[ind].a).data ++;
+		chains(tris[ind].a, tris[ind].c).data --;
+	}
     // now go through and see if any of these are non-zero
     bool closed = true;
     chains.for_each([&](uint i, uint j, EGraphEntry<int> &entry) {
@@ -220,10 +221,12 @@ bool Mesh<VertData,TriData>::isClosed()
 static inline
 bool contains(const ShortVec<uint, 8> &list, uint item)
 {
-    for(uint k : list)
-        if(k == item)
-            return true;
-    return false;
+	for(size_t k=0; k!=list.size(); ++k)
+	{
+		if(list[k] == item)
+			return true;
+	}
+	return false;
 }
 
 template<class VertData, class TriData>
@@ -292,12 +295,3 @@ std::vector<uint> Mesh<VertData,TriData>::getComponentIds()
     
     return uf.dump();
 }
-
-
-
-
-
-
-
-
-

@@ -25,7 +25,7 @@
 // +-------------------------------------------------------------------------
 #pragma once
 
-#include "bbox.h"
+#include "../math/bbox.h"
 
 #include <stack>
 
@@ -84,8 +84,11 @@ public:
             if(!hasIsct(node->bbox, bbox))  continue;
             
             // otherwise...
-            if(node->isLeaf()) {
-                for(uint bid : node->blobids) {
+			if(node->isLeaf())
+			{
+				for(size_t ind=0; ind != node->blobids.size(); ++ind)
+				{
+					uint bid = node->blobids[ind];
                     if(hasIsct(bbox, blobs[bid].bbox))
                         action(blobs[bid].id);
                 }
@@ -171,26 +174,3 @@ private:
     std::vector< GeomBlob<GeomIdx> >    blobs;
     std::vector<uint>                   tmpids; // used during construction
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

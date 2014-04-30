@@ -58,19 +58,21 @@ int readOFF(string filename, FileMesh *data)
     data->triangles.resize(numfaces);
     
     // vertex data
-    for(auto &v : data->vertices) {
-        Vec3d &p = v.pos;
+	for(size_t ind=0; ind != data->vertices.size(); ++ind)
+	{
+		Vec3d &p = data->vertices[ind].pos;
         in >> p.x >> p.y >> p.z;
     }
     if(!in) return 1;
     
     // face data
-    for(auto &tri : data->triangles) {
+	for(size_t ind=0; ind != data->triangles.size(); ++ind)
+	{
         int polysize;
         in >> polysize;
         if(polysize != 3)   return 1;
-        
-        in >> tri.a >> tri.b >> tri.c;
+
+		in >> data->triangles[ind].a >> data->triangles[ind].b >> data->triangles[ind].c;
     }
     if(!in) return 1;
     
@@ -94,20 +96,19 @@ int writeOFF(string filename, FileMesh *data)
     out << numvertices << ' ' << numfaces << ' ' << 0 << endl;
     
     // vertex data
-    for(const auto &v : data->vertices) {
-        const Vec3d &p = v.pos;
+	for(size_t ind=0; ind != data->vertices.size(); ++ind)
+	{
+		const Vec3d &p = data->vertices[ind].pos;
         out << p.x << ' ' << p.y << ' ' << p.z << endl;
     }
     
     // face data
-    for(const auto &tri : data->triangles) {
-        out << "3 " << tri.a << ' ' << tri.b << ' ' << tri.c << endl;
+	for(size_t ind=0; ind != data->triangles.size(); ++ind)
+	{
+		out << "3 " << data->triangles[ind].a << ' ' << data->triangles[ind].b << ' ' << data->triangles[ind].c << endl;
     }
     if(!out) return 1;
     
     return 0;
 }
-
-
-
 } // end namespace Files
