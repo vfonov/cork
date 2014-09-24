@@ -1159,6 +1159,110 @@ void Mesh<VertData,TriData>::IsctProblem::marshallArithmeticInput(
     marshallArithmeticInput(input.tri[2], t2);
 }
 
+/*************************/
+
+const double SMALL_NUM  = 1.0e-8; // to avoid division overflow
+
+bool intersect3D_EdgeEdge(		const Vec3d& A0,
+								const Vec3d& A1,
+								const Vec3d& B0,
+								const Vec3d& B1 )
+{
+	//Find lambda and mu such that:
+	//A = p0+lambda(p1-p0)
+	//B = p2+mu(p3-p2)
+	//(lambda, mu) = argmin(||A-B||²)
+	Vec3d p02 = A0-B0;
+	Vec3d p32 = B1-B0;
+	Vec3d p10 = A1-A0;
+	double denom = (dot(p10,p10) * dot(p32,p32)) - (dot(p32,p10) * dot(p32,p10));
+	if (fabs(denom) < SMALL_NUM)
+		return false;
+	double num = (dot(p02,p32) * dot(p32,p10)) - (dot(p02,p10) * dot(p32,p32));
+	double lambda = num / denom;
+	
+	num = dot(p02,p32) + (lambda*dot(p32,p10));
+	denom = dot(p32,p32);
+	if (fabs(denom) < SMALL_NUM)
+		return false;
+	double mu = num / denom;
+
+	return (lambda > 0.0 && lambda < 1.0) && (mu > 0.0 && mu < 1.0);
+}
+
+//Source: http://geomalgorithms.com/a06-_intersect-2.html
+
+// intersect3D_EdgeTriangle(): find the 3D intersection of a ray with a triangle
+//    Input:  an edge defined by E0 and E1, and a triangle defined by T0, T1 and T2
+//    Return: -1 = triangle is degenerate (a segment or point)
+//             0 =  disjoint (no intersect)
+//             1 =  intersect in unique point
+//             2 =  are in the same plane
+int intersect3D_EdgeTriangle(	const Vec3d& E0,
+								const Vec3d& E1,
+								const Vec3d& T0,
+								const Vec3d& T1,
+								const Vec3d& T2 )
+{
+	// get triangle edge vectors and plane normal
+	Vec3d u = T1 - T0;
+	Vec3d v = T2 - T0;
+	Vec3d n = cross(u,v);			// cross product
+	if (max(abs(n)) == 0)			// triangle is degenerate
+		return -1;					// do not deal with this case
+
+	Vec3d dir = E1 - E0;			// edge 'direction' vector
+	Vec3d w0 = E0 - T0;
+	double a = -dot(n,w0);
+	double b =  dot(n,dir);
+
+	if (fabs(b) < SMALL_NUM)		// edge is parallel to triangle plane
+	{     
+		if (a == 0)					// edge lies in triangle plane
+		{
+			//TODO: we still want to test the intersection?!
+			//if (intersect3D_EdgeEdge(E0,E1,T0,T1))
+			//	return 1;
+			//if (intersect3D_EdgeEdge(E0,E1,T1,T2))
+			//	return 1;
+			//if (intersect3D_EdgeEdge(E0,E1,T2,T0))
+			//	return 1;
+			return 0;
+		}
+		else return 0;				// edge disjoint from plane
+	}
+
+	// get intersect point of edge with triangle plane
+	double r = a / b;
+	if (r < 0 || r > 1.0)			// edge doesn't realy intersect the triangle plane
+		return 0;					// => no intersect
+
+	Vec3d I = E0 + r * dir;			// intersect point of ray and plane
+
+	// is I inside T?
+	double uu, uv, vv, wu, wv, D;
+	uu = dot(u,u);
+	uv = dot(u,v);
+	vv = dot(v,v);
+	Vec3d w = I - T0;
+	wu = dot(w,u);
+	wv = dot(w,v);
+	D = uv * uv - uu * vv;
+
+	// get and test parametric coords
+	double s, t;
+	s = (uv * wv - vv * wu) / D;
+	if (s < 0.0 || s > 1.0)			// I is outside T
+		return 0;
+	t = (uv * wu - uu * wv) / D;
+	if (t < 0.0 || (s + t) > 1.0)	// I is outside T
+		return 0;
+
+	return 1;						// I is in T
+}
+
+/************************/
+
 template<class VertData, class TriData>
 bool Mesh<VertData,TriData>::IsctProblem::checkIsct(Eptr e, Tptr t) const
 {
@@ -1173,12 +1277,50 @@ bool Mesh<VertData,TriData>::IsctProblem::checkIsct(Eptr e, Tptr t) const
     // so we discard this case from consideration.
     if(hasCommonVert(e, t))
                 return      false;
-    
+
+#ifdef USE_ORIGINAL_CODE
     Empty3d::TriEdgeIn input;
     marshallArithmeticInput(input, e, t);
     //bool empty = Empty3d::isEmpty(input);
     bool empty = Empty3d::emptyExact(input);
     return !empty;
+#else
+    Vec3d p0 = vPos(t->verts[0]);
+    Vec3d p1 = vPos(t->verts[1]);
+    Vec3d p2 = vPos(t->verts[2]);
+    Vec3d e0 = vPos(e->verts[0]);
+    Vec3d e1 = vPos(e->verts[1]);
+	int isect = intersect3D_EdgeTriangle(e0,e1,p0,p1,p2);
+	if (isect == -1)
+	{
+		Empty3d::degeneracy_count++;
+	}
+	else if (isect != 0)
+	{
+#ifdef _DEBUG
+		//save problematic configurationa as obj file
+		char buffer[256];
+		sprintf(buffer,"prob_config_t%i_e%i-%i.obj",t->ref,e->verts[0]->ref,e->verts[1]->ref);
+		FILE* fp = fopen(buffer,"wt");
+		if (fp)
+		{
+			fprintf(fp,"#Cork intersection detection\n");
+			fprintf(fp,"v %f %f %f\n",p0.x,p0.y,p0.z);
+			fprintf(fp,"v %f %f %f\n",p1.x,p1.y,p1.z);
+			fprintf(fp,"v %f %f %f\n",p2.x,p2.y,p2.z);
+			fprintf(fp,"v %f %f %f\n",e0.x,e0.y,e0.z);
+			fprintf(fp,"v %f %f %f\n",e1.x,e1.y,e1.z);
+			fprintf(fp,"o Triangle\n");
+			fprintf(fp,"f 1 2 3\n");
+			fprintf(fp,"o Edge\n");
+			fprintf(fp,"l 4 5\n");
+			fclose(fp);
+		}
+#endif
+		return true;
+	}
+	return false;
+#endif
 }
 
 template<class VertData, class TriData>
