@@ -12538,7 +12538,15 @@ char *polyfilename;
             printf("Warning:  Endpoints of segment %d are coincident in %s.\n",
                    b->firstnumber + i, polyfilename);
           }
-        } else {
+        } 
+		else if (vertextype(endpoint1) == UNDEADVERTEX || vertextype(endpoint2) == UNDEADVERTEX)
+				{
+			if (!b->quiet) {
+			printf("Warning:  At least one of the endpoints of segment %d is not part of the output triangulation in %s.\n",
+					b->firstnumber + i, polyfilename);
+			}
+		}
+		else {
           insertsegment(m, b, endpoint1, endpoint2, boundmarker);
         }
       }
