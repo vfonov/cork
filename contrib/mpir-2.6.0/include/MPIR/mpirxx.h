@@ -41,7 +41,7 @@ along with the GNU MP Library.  If not, see http://www.gnu.org/licenses/.  */
 #include <stdexcept>
 #include <cfloat>
 
-#include <mpir.h>
+#include <MPIR/mpir.h>
 
 #include <climits>
 
