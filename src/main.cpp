@@ -28,7 +28,7 @@
 // to exercise Cork's functionality without having to write
 // any code.
 
-#include "files.h"
+#include "file_formats/files.h"
 
 #include <iostream>
 using std::cout;

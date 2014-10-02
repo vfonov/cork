@@ -112,7 +112,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\contrib\mpir-2.6.0\lib\Win32\Release;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_USE_MATH_DEFINES;NOMINMAX;NO_TIMER;_CRT_SECURE_NO_WARNINGS;TRILIBRARY;NDEBUG;SUPPORT_TOPO_STREAM_OPERATORS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;NOMINMAX;NO_TIMER;_CRT_SECURE_NO_WARNINGS;TRILIBRARY;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -127,7 +127,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\contrib\mpir-2.6.0\lib\Win32\Release;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_USE_MATH_DEFINES;NOMINMAX;NO_TIMER;_CRT_SECURE_NO_WARNINGS;TRILIBRARY;NDEBUG;SUPPORT_TOPO_STREAM_OPERATORS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;NOMINMAX;NO_TIMER;_CRT_SECURE_NO_WARNINGS;TRILIBRARY;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
