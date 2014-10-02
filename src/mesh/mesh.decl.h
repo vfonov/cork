@@ -241,6 +241,12 @@ private:    // Internal stuff
     inline void move_tri(Tri &t_new, Tri &t_old);
     inline void subdivide_tri(uint t_piece_ref, uint t_parent_ref);
     
+public:
+	inline std::vector<Tri>&            getTris() { return tris; }
+	inline const std::vector<Tri>&      getTris() const { return tris; }
+	inline std::vector<VertData>&       getVerts() { return verts; }
+	inline const std::vector<VertData>& getVerts() const { return verts; }
+
 private:    // DATA
     std::vector<Tri>        tris;
     std::vector<VertData>   verts;
