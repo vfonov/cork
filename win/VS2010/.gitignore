@@ -1,0 +1,6 @@
+*.sdf
+*.suo
+*.vcxproj.user
+/ipch/
+/Win32/
+/x64/
