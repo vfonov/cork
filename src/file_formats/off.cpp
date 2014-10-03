@@ -91,19 +91,19 @@ int writeOFF(string filename, FileMesh *data)
     out << "OFF" << endl;
     
     // numvertices, numfaces, numedges=0
-    int numvertices = data->vertices.size();
-    int numfaces = data->triangles.size();
+    size_t numvertices = data->vertices.size();
+    size_t numfaces = data->triangles.size();
     out << numvertices << ' ' << numfaces << ' ' << 0 << endl;
     
     // vertex data
-	for(size_t ind=0; ind != data->vertices.size(); ++ind)
+	for(size_t ind=0; ind != numvertices; ++ind)
 	{
 		const Vec3d &p = data->vertices[ind].pos;
         out << p.x << ' ' << p.y << ' ' << p.z << endl;
     }
     
     // face data
-	for(size_t ind=0; ind != data->triangles.size(); ++ind)
+	for(size_t ind=0; ind != numfaces; ++ind)
 	{
 		out << "3 " << data->triangles[ind].a << ' ' << data->triangles[ind].b << ' ' << data->triangles[ind].c << endl;
     }

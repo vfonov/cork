@@ -131,10 +131,10 @@ uint Mesh<VertData, TriData>::TopoCache::quantizeVerts(std::vector<Vec3d>& quant
 template<class VertData, class TriData> inline
 Vptr Mesh<VertData, TriData>::TopoCache::newVert()
 {
-    uint        ref         = mesh->verts.size();
+    size_t      ref         = mesh->verts.size();
                 mesh->verts.push_back(VertData());
     Vptr        v           = verts.alloc(); // cache.verts
-                v->ref      = ref;
+                v->ref      = static_cast<uint>(ref);
                 return v;
 }
 template<class VertData, class TriData> inline
@@ -146,10 +146,10 @@ Eptr Mesh<VertData, TriData>::TopoCache::newEdge()
 template<class VertData, class TriData> inline
 Tptr Mesh<VertData, TriData>::TopoCache::newTri()
 {
-    uint        ref         = mesh->tris.size();
+    size_t      ref         = mesh->tris.size();
                 mesh->tris.push_back(Tri());
     Tptr        t           = tris.alloc(); // cache.tris
-                t->ref      = ref;
+                t->ref      = static_cast<uint>(ref);
                 return t;
 }
 
@@ -294,7 +294,7 @@ void Mesh<VertData, TriData>::TopoCache::init()
     //  * Hook up Vertices and Edges
 	for(uint vid0=0; vid0 < edgeacc.size(); vid0++)
 	{
-		for(size_t ind=0; ind!= edgeacc[vid0].size(); ++ind)
+		for(uint ind=0; ind!= edgeacc[vid0].size(); ++ind)
 		{
 			TopoEdgePrototype &proto = edgeacc[vid0][ind];
 			uint vid1 = proto.vid;
@@ -308,7 +308,7 @@ void Mesh<VertData, TriData>::TopoCache::init()
 			edge->verts[1] = v1;
 			v1->edges.push_back(edge);
 			// edges <--> tris
-			for(size_t ind2=0; ind2!= proto.tris.size(); ++ind2)
+			for(uint ind2=0; ind2!= proto.tris.size(); ++ind2)
 			{
 				Tptr tri = proto.tris[ind2];
 				edge->tris.push_back(tri);

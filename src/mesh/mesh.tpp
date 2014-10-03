@@ -112,10 +112,10 @@ RawMesh<VertData,TriData> Mesh<VertData,TriData>::raw() const
 template<class VertData, class TriData>
 void Mesh<VertData,TriData>::disjointUnion(const Mesh &cp)
 {
-    uint oldVsize = verts.size();
-    uint oldTsize = tris.size();
-    uint cpVsize  = cp.verts.size();
-    uint cpTsize  = cp.tris.size();
+    uint oldVsize = static_cast<uint>(verts.size());
+    uint oldTsize = static_cast<uint>(tris.size());
+    uint cpVsize  = static_cast<uint>(cp.verts.size());
+    uint cpTsize  = static_cast<uint>(cp.tris.size());
     uint newVsize = oldVsize + cpVsize;
     uint newTsize = oldTsize + cpTsize;
     
@@ -221,7 +221,7 @@ bool Mesh<VertData,TriData>::isClosed()
 static inline
 bool contains(const ShortVec<uint, 8> &list, uint item)
 {
-	for(size_t k=0; k!=list.size(); ++k)
+	for(uint k=0; k!=list.size(); ++k)
 	{
 		if(list[k] == item)
 			return true;

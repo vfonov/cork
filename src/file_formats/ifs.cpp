@@ -183,10 +183,10 @@ inline bool write_texturecoord(ofstream &out, const TextureCoord &data)
 // do not advance the file pointer
 bool checkString(ifstream &in, string toCheck)
 {
-    uint32 length = toCheck.length()+1; // +1 for null-terminator
+    uint32 length = static_cast<uint32>(toCheck.length())+1; // +1 for null-terminator
     uint32 read_length;
     if(!read_uint32(in, read_length)) return false;
-    if(read_length != length) return false;
+    if(static_cast<size_t>(read_length) != length) return false;
     
     char *buf = new char[length];
     in.read(buf, length);
@@ -221,7 +221,7 @@ bool readString(ifstream &in, string &data)
 
 bool writeString(ofstream &out, const string &data)
 {
-    uint32 length = data.length()+1;
+    uint32 length = static_cast<uint32>(data.length())+1;
     if(!write_uint32(out, length)) return false;
     
     out.write(data.c_str(), length);
@@ -320,7 +320,7 @@ int writeIFS(string filename, FileMesh *data)
     
     // VERTICES
     if(!writeString(out,"VERTICES")) return 1;
-    uint32 num_vertices = data->vertices.size();
+    uint32 num_vertices = static_cast<uint32>(data->vertices.size());
     if(!write_uint32(out, num_vertices)) return 1;
 	for(size_t ind=0; ind != data->vertices.size(); ++ind)
 	{
@@ -330,7 +330,7 @@ int writeIFS(string filename, FileMesh *data)
     
     // TRIANGLES
     if(!writeString(out,"TRIANGLES")) return 1;
-    uint32 num_tris = data->triangles.size();
+    uint32 num_tris = static_cast<uint32>(data->triangles.size());
     if(!write_uint32(out, num_tris)) return 1;
 	for(size_t ind=0; ind != data->triangles.size(); ++ind)
 	{

@@ -303,7 +303,7 @@ private:    // caches
 		{
 			for(uint i=0; i<skeleton.size(); i++)
 			{
-				for(size_t ind=0; ind != skeleton[i].size(); ++ind)
+				for(uint ind=0; ind != skeleton[i].size(); ++ind)
 				{
 					action(i, skeleton[i][ind].vid, skeleton[i][ind]);
 				}

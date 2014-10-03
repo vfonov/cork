@@ -133,7 +133,7 @@ struct GluePointMarker
 template<uint LEN> inline
 IEptr find_edge(ShortVec<IEptr,LEN> &vec, Tptr key)
 {
-    for(size_t ind=0; ind!=vec.size(); ++ind) {
+    for(uint ind=0; ind!=vec.size(); ++ind) {
 		IEptr ie = vec[ind];
         if(ie->other_tri_key == key)
             return ie;
@@ -179,7 +179,7 @@ inline void disconnectGE(GEptr ge)
 {
     ge->ends[0]->edges.erase(ge);
     ge->ends[1]->edges.erase(ge);
-    for(size_t ind = 0; ind != ge->interior.size(); ++ind)
+    for(uint ind = 0; ind != ge->interior.size(); ++ind)
         ge->interior[ind]->edges.erase(ge);
 }
 
@@ -239,7 +239,7 @@ public:
         IVptr       iv              = iprob->newIsctVert(edge, the_tri, glue);
                     iv->boundary    = false;
                     iverts.push_back(iv);
-        for(size_t ind=0; ind != edge->tris.size(); ++ind) {
+        for(uint ind=0; ind != edge->tris.size(); ++ind) {
                     addEdge(iprob, iv, edge->tris[ind]);
         }
         return iv;
@@ -280,7 +280,7 @@ public:
                     iv->boundary    = false;
                     iverts.push_back(iv);
         // find the 2 interior edges
-        for(size_t ind=0; ind != iedges.size(); ++ind) {
+        for(uint ind=0; ind != iedges.size(); ++ind) {
 			IEptr ie = iedges[ind];
             if(ie->other_tri_key == t0 ||
                ie->other_tri_key == t1) {
@@ -295,7 +295,7 @@ public:
         // identify all intersection edges missing endpoints
         // and check to see if we can assign an original vertex
         // as the appropriate endpoint.
-        for(size_t ind=0; ind!=iedges.size(); ++ind) {
+        for(uint ind=0; ind!=iedges.size(); ++ind) {
 			IEptr ie = iedges[ind];
             if(ie->ends[1] == nullptr) {
                 // try to figure out which vertex must be the endpoint...
@@ -355,7 +355,7 @@ public:
             points.push_back(overts[k]);
             //std::cout << k << ": id " << overts[k]->concrete->ref << std::endl;
         }
-        for(size_t ind=0; ind!=iverts.size(); ++ind)
+        for(uint ind=0; ind!=iverts.size(); ++ind)
 		{
 			IVptr iv = iverts[ind];
             //iprob->buildConcreteVert(iv);
@@ -403,7 +403,7 @@ public:
         //          << "; " << the_tri->verts[1]->ref
         //          << "; " << the_tri->verts[2]->ref
         //          << std::endl;
-        for(size_t ind=0; ind!=iedges.size(); ++ind) {
+        for(uint ind=0; ind!=iedges.size(); ++ind) {
 			IEptr &ie = iedges[ind];
             //std::cout << "iedge:  "
             //          << ie->ends[0]->idx << "; "
@@ -576,7 +576,7 @@ private:
             
             // pack the interior vertices into a vector for sorting
             std::vector< std::pair<double,IVptr> > verts;
-            for(size_t ind=0; ind!=ge->interior.size(); ++ind)
+            for(uint ind=0; ind!=ge->interior.size(); ++ind)
 			{
 				IVptr iv = ge->interior[ind];
 				verts.push_back(std::make_pair(
@@ -640,7 +640,7 @@ public:
         Quantization::callibrate(maxMag);
         
         // and use vertex auxiliary data to store quantized vertex coordinates
-        uint N = TopoCache::mesh->verts.size();
+        size_t N = TopoCache::mesh->verts.size();
         quantized_coords.resize(N);
         uint write = TopoCache::quantizeVerts(quantized_coords);
     }
@@ -941,7 +941,7 @@ bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
                     glue->t[0]              = tisct;
         // first add point and edges to the pierced triangle
         IVptr iv = getTprob(tisct)->addInteriorEndpoint(this, eisct, glue);
-        for(size_t ind=0; ind!=eisct->tris.size(); ++ind) {
+        for(uint ind=0; ind!=eisct->tris.size(); ++ind) {
             getTprob(eisct->tris[ind])->addBoundaryEndpoint(this, tisct, eisct, iv);
         }
       }
@@ -978,7 +978,7 @@ bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
 						// now look for the third edge.  We're not
 						// sure if it exists...
 						Tprob prob1 = reinterpret_cast<Tprob>(t1->data);
-						for(size_t ind=0; ind!=prob1->iedges.size(); ++ind)
+						for(uint ind=0; ind!=prob1->iedges.size(); ++ind)
 						{
 							if(prob1->iedges[ind]->other_tri_key == t2)
 							{
@@ -1504,7 +1504,7 @@ void Mesh<VertData,TriData>::IsctProblem::createRealPtFromGluePt(GluePt glue) {
     VertData    &data           = TopoCache::mesh->verts[v->ref];
                 data.pos        = glue->copies[0]->coord;
                 fillOutVertData(glue, data);
-    for(size_t ind=0; ind!=glue->copies.size(); ++ind)
+    for(uint ind=0; ind!=glue->copies.size(); ++ind)
 		glue->copies[ind]->concrete    = v;
 }
 
@@ -1512,7 +1512,7 @@ template<class VertData, class TriData>
 void Mesh<VertData,TriData>::IsctProblem::createRealTriangles(
     Tprob tprob, EdgeCache &ecache
 ) {
-    for(size_t ind=0; ind!=tprob->gtris.size(); ++ind) {
+    for(uint ind=0; ind!=tprob->gtris.size(); ++ind) {
 		
 		GTptr gt = tprob->gtris[ind];
 

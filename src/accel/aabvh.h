@@ -62,7 +62,7 @@ public:
         for(uint k=0; k<tmpids.size(); k++)
             tmpids[k] = k;
         
-        root = constructTree(0, tmpids.size(), 2);
+        root = constructTree(0, static_cast<uint>(tmpids.size()), 2);
     }
     ~AABVH() {}
     
@@ -86,7 +86,7 @@ public:
             // otherwise...
 			if(node->isLeaf())
 			{
-				for(size_t ind=0; ind != node->blobids.size(); ++ind)
+				for(uint ind=0; ind != node->blobids.size(); ++ind)
 				{
 					uint bid = node->blobids[ind];
                     if(hasIsct(bbox, blobs[bid].bbox))
