@@ -304,7 +304,7 @@ void Mesh<VertData,TriData>::BoolProblem::doDeleteAndFlip(
 
 
 
-static TriCode lambda1(byte data)
+static TriCode lambdaUnion(byte data)
 {
 	if((data & 2) == 2)     // part of op 0/1 INSIDE op 1/0
 		return DELETE_TRI;
@@ -320,18 +320,18 @@ void Mesh<VertData,TriData>::boolUnion(Mesh &rhs)
 
     bprob.doSetup(rhs);
 
-	bprob.doDeleteAndFlip(lambda1);
+	bprob.doDeleteAndFlip(lambdaUnion);
 }
 
-static TriCode lambda2(byte data)
+static TriCode lambdaDiff(byte data)
 {
-        if(data == 2 ||         // part of op 0 INSIDE op 1
-           data == 1)           // part of op 1 OUTSIDE op 0
-            return DELETE_TRI;
-        else if(data == 3)      // part of op 1 INSIDE op 1
-            return FLIP_TRI;
-        else                    // part of op 0 OUTSIDE op 1
-            return KEEP_TRI;
+	if(	data == 2 ||         // part of op 0 INSIDE op 1
+		data == 1)           // part of op 1 OUTSIDE op 0
+		return DELETE_TRI;
+	else if (data == 3)      // part of op 1 INSIDE op 1
+		return FLIP_TRI;
+	else                    // part of op 0 OUTSIDE op 1
+		return KEEP_TRI;
 }
 
 template<class VertData, class TriData>
@@ -341,15 +341,15 @@ void Mesh<VertData,TriData>::boolDiff(Mesh &rhs)
 
     bprob.doSetup(rhs);
 
-    bprob.doDeleteAndFlip(lambda2);
+    bprob.doDeleteAndFlip(lambdaDiff);
 }
 
-static TriCode lambda3(byte data)
+static TriCode lambdaIsct(byte data)
 {
-        if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
-            return DELETE_TRI;
-        else                    // part of op 0/1 INSIDE op 1/0
-            return KEEP_TRI;
+	if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
+		return DELETE_TRI;
+	else                    // part of op 0/1 INSIDE op 1/0
+		return KEEP_TRI;
 }
 
 template<class VertData, class TriData>
@@ -359,15 +359,15 @@ void Mesh<VertData,TriData>::boolIsct(Mesh &rhs)
     
     bprob.doSetup(rhs);
     
-    bprob.doDeleteAndFlip(lambda3);
+    bprob.doDeleteAndFlip(lambdaIsct);
 }
 
-static TriCode lambda4(byte data)
+static TriCode lambdaXor(byte data)
 {
-        if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
-            return KEEP_TRI;
-        else                    // part of op 0/1 INSIDE op 1/0
-            return FLIP_TRI;
+	if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
+		return KEEP_TRI;
+	else                    // part of op 0/1 INSIDE op 1/0
+		return FLIP_TRI;
 }
 
 template<class VertData, class TriData>
@@ -377,5 +377,5 @@ void Mesh<VertData,TriData>::boolXor(Mesh &rhs)
 
     bprob.doSetup(rhs);
 
-	bprob.doDeleteAndFlip(lambda4);
+	bprob.doDeleteAndFlip(lambdaXor);
 }
