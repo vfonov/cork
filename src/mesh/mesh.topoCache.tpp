@@ -99,34 +99,10 @@ struct Mesh<VertData, TriData>::TopoCache {
     // helper to flip triangle orientation
     inline void flipTri(Tptr);
 
-	// DGM: to replace lambda in IsctProblem constructor!
-	uint quantizeVerts(std::vector<Vec3d>& quantized_coords);
-    
 private:
     void init();
 };
 
-
-template<class VertData, class TriData>
-uint Mesh<VertData, TriData>::TopoCache::quantizeVerts(std::vector<Vec3d>& quantized_coords)
-{
-	uint write = 0;
-	for (Vptr v = verts.getFirst(); v != NULL; v = verts.getNext(v))
-	{
-#ifdef _WIN32
-		Vec3d raw = mesh->verts[v->ref].pos;
-#else
-		Vec3d raw = TopoCache::mesh->verts[v->ref].pos;
-#endif
-		quantized_coords[write].x = Quantization::quantize(raw.x);
-		quantized_coords[write].y = Quantization::quantize(raw.y);
-		quantized_coords[write].z = Quantization::quantize(raw.z);
-		v->data = &(quantized_coords[write]);
-		write++;
-	}
-
-	return write;
-}
 
 template<class VertData, class TriData> inline
 Vptr Mesh<VertData, TriData>::TopoCache::newVert()

@@ -33,6 +33,8 @@
 
 #include "../accel/aabvh.h"
 
+#include <assert.h>
+
 #define REAL double
 extern "C" {
 #include "../isct/triangle.h"
@@ -322,11 +324,12 @@ public:
                     for(uint k=0; k<3; k++)
                         std::cout << iprob->vPos(ie->other_tri_key->verts[k])
                                   << std::endl;
-                    std::cout << "degen count:"
-                              << Empty3d::degeneracy_count << std::endl;
-                    std::cout << "exact count: "
-                              << Empty3d::exact_count << std::endl;
+                    //std::cout << "degen count:"
+                    //    << empty3d.degeneracy_count << std::endl;
+                    //std::cout << "exact count: "
+                    //    << empty3d.exact_count << std::endl;
                 }
+                //assert(vert);
                 ENSURE(vert); // bad if we can't find a common vertex
                 // then, find the corresponding OVptr, and connect
                 for(uint k=0; k<3; k++) {
@@ -339,14 +342,11 @@ public:
             }
         }
         
+        //assert(isValid());
         ENSURE(isValid());
     }
     
-    bool isValid() const {
-        ENSURE(the_tri);
-        
-        return true;
-    }
+    bool isValid() const { return the_tri != 0; }
     
     void subdivide(IsctProblem *iprob) {
         // collect all the points, and create more points as necessary
@@ -624,11 +624,13 @@ class Mesh<VertData,TriData>::IsctProblem : public TopoCache
 {
 public:
 
-    IsctProblem(Mesh *owner) : TopoCache(owner)
+    IsctProblem(Mesh *owner)
+        : TopoCache(owner)
+        , empty3d(&quantizer)
     {
         // initialize all the triangles to NOT have an associated tprob
-		for (Tptr t = TopoCache::tris.getFirst(); t != NULL; t = TopoCache::tris.getNext(t))
-		{
+        for (Tptr t = TopoCache::tris.getFirst(); t != NULL; t = TopoCache::tris.getNext(t))
+        {
             t->data = nullptr;
         }
         
@@ -637,22 +639,51 @@ public:
         for(size_t ind=0; ind != TopoCache::mesh->verts.size(); ++ind) {
             maxMag = std::max(maxMag, max(abs(TopoCache::mesh->verts[ind].pos)));
         }
-        Quantization::callibrate(maxMag);
+        quantizer.callibrate(maxMag);
         
         // and use vertex auxiliary data to store quantized vertex coordinates
-        size_t N = TopoCache::mesh->verts.size();
-        quantized_coords.resize(N);
-        uint write = TopoCache::quantizeVerts(quantized_coords);
+        quantizeVerts(quantizer);
     }
     
     virtual ~IsctProblem() {}
-    
+
+	// DGM: to replace lambda in IsctProblem constructor!
+	void quantizeVerts(const Quantization& quantizer)
+	{
+		if (!mesh)
+			return;
+
+		size_t N = mesh->verts.size();
+		quantized_coords.resize(N);
+
+		uint write = 0;
+		for (Vptr v = verts.getFirst(); v != NULL; v = verts.getNext(v))
+		{
+#ifdef _WIN32
+			Vec3d raw = mesh->verts[v->ref].pos;
+#else
+			Vec3d raw = TopoCache::mesh->verts[v->ref].pos;
+#endif
+			quantized_coords[write].x = quantizer.quantize(raw.x);
+			quantized_coords[write].y = quantizer.quantize(raw.y);
+			quantized_coords[write].z = quantizer.quantize(raw.z);
+			v->data = &(quantized_coords[write]);
+			write++;
+		}
+
+		ENSURE(write == N);
+	}
+
     // access auxiliary quantized coordinates
     inline Vec3d vPos(Vptr v) const {
         return *(reinterpret_cast<Vec3d*>(v->data));
     }
     
     Tprob getTprob(Tptr t) {
+		if (t->ref == 46445)
+		{
+			int stop = 1;
+		}
         Tprob prob = reinterpret_cast<Tprob>(t->data);
         if(!prob) {
             t->data = prob = tprobs.alloc();
@@ -832,7 +863,9 @@ protected: // DATA
     IterPool<SplitEdgeType>     sepool;
     IterPool<GenericTriType>    gtpool;
 private:
+    Empty3d                     empty3d;
     std::vector<Vec3d>          quantized_coords;
+    Quantization                quantizer;
 private:
     inline void for_edge_tri(std::function<bool(Eptr e, Tptr t)>);
     inline void bvh_edge_tri(std::function<bool(Eptr e, Tptr t)>);
@@ -850,8 +883,8 @@ private:
     inline void marshallArithmeticInput(
         Empty3d::TriTriTriIn &input, Tptr t0, Tptr t1, Tptr t2) const;
     
-    bool checkIsct(Eptr e, Tptr t) const;
-    bool checkIsct(Tptr t0, Tptr t1, Tptr t2) const;
+    bool checkIsct(Eptr e, Tptr t);
+    bool checkIsct(Tptr t0, Tptr t1, Tptr t2);
     
     Vec3d computeCoords(Eptr e, Tptr t) const;
     Vec3d computeCoords(Tptr t0, Tptr t1, Tptr t2) const;
@@ -930,7 +963,7 @@ void Mesh<VertData,TriData>::IsctProblem::bvh_edge_tri(
 template<class VertData, class TriData>
 bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
 {
-    Empty3d::degeneracy_count = 0;
+	empty3d.resetCounts();
     // Find all edge-triangle intersection points
     //for_edge_tri([&](Eptr eisct, Tptr tisct)->bool{
     bvh_edge_tri([&](Eptr eisct, Tptr tisct)->bool{
@@ -940,17 +973,21 @@ bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
                     glue->e                 = eisct;
                     glue->t[0]              = tisct;
         // first add point and edges to the pierced triangle
+  //      if (tisct->ref == 46445 || tisct->ref == 46510 )
+		//{
+		//	int toto = 0;
+		//}
         IVptr iv = getTprob(tisct)->addInteriorEndpoint(this, eisct, glue);
         for(uint ind=0; ind!=eisct->tris.size(); ++ind) {
             getTprob(eisct->tris[ind])->addBoundaryEndpoint(this, tisct, eisct, iv);
         }
       }
-      if(Empty3d::degeneracy_count > 0)
+      if(empty3d.hasDegeneracies())
         return false; // break
       else
         return true; // continue
     });
-    if(Empty3d::degeneracy_count > 0) {
+    if(empty3d.hasDegeneracies()) {
         return false;   // restart / abort
     }
     
@@ -999,7 +1036,7 @@ bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
         if(!checkIsct(t.t0, t.t1, t.t2))    continue;
         
         // Abort if we encounter a degeneracy
-        if(Empty3d::degeneracy_count > 0)   break;
+        if(empty3d.hasDegeneracies())   break;
         
         GluePt      glue                    = newGluePt();
                     glue->edge_tri_type     = false;
@@ -1010,7 +1047,7 @@ bool Mesh<VertData,TriData>::IsctProblem::tryToFindIntersections()
         getTprob(t.t1)->addInteriorPoint(this, t.t0, t.t2, glue);
         getTprob(t.t2)->addInteriorPoint(this, t.t0, t.t1, glue);
     }
-    if(Empty3d::degeneracy_count > 0) {
+    if(empty3d.hasDegeneracies()) {
         return false;   // restart / abort
     }
     
@@ -1022,9 +1059,9 @@ void Mesh<VertData,TriData>::IsctProblem::perturbPositions()
 {
     const double EPSILON = 1.0e-5; // perturbation epsilon
     for(size_t ind=0; ind!=quantized_coords.size(); ++ind) {
-        Vec3d perturbation(Quantization::quantize(drand(-EPSILON, EPSILON)),
-                           Quantization::quantize(drand(-EPSILON, EPSILON)),
-                           Quantization::quantize(drand(-EPSILON, EPSILON)));
+        Vec3d perturbation(quantizer.quantize(drand(-EPSILON, EPSILON)),
+                           quantizer.quantize(drand(-EPSILON, EPSILON)),
+                           quantizer.quantize(drand(-EPSILON, EPSILON)));
         quantized_coords[ind] += perturbation;
     }
 }
@@ -1077,9 +1114,11 @@ void Mesh<VertData,TriData>::IsctProblem::findIntersections()
     // all triangle problems assembled.
     // Some intersection edges may have original vertices as endpoints
     // we consolidate the problems to check for cases like these.
+	unsigned counter = 0;
 	for (Tprob tprob = tprobs.getFirst(); tprob != NULL; tprob = tprobs.getNext(tprob))
 	{
-        tprob->consolidate(this);
+		tprob->consolidate(this);
+		++counter;
     }
 }
 
@@ -1087,26 +1126,27 @@ template<class VertData, class TriData>
 bool Mesh<VertData,TriData>::IsctProblem::hasIntersections()
 {
     bool foundIsct = false;
-    Empty3d::degeneracy_count = 0;
+    empty3d.resetCounts();
     // Find some edge-triangle intersection point...
     bvh_edge_tri([&](Eptr eisct, Tptr tisct)->bool{
       if(checkIsct(eisct,tisct)) {
         foundIsct = true;
         return false; // break;
       }
-      if(Empty3d::degeneracy_count > 0) {
+      if(empty3d.hasDegeneracies()) {
         return false; // break;
       }
       return true; // continue
     });
     
-    if(Empty3d::degeneracy_count > 0 || foundIsct) {
+	bool hasIntersect = false;
+    if(empty3d.hasDegeneracies() || foundIsct) {
         std::cout << "This self-intersection might be spurious. "
                      "Degeneracies were detected." << std::endl;
-        return true;
-    } else {
-        return false;
+        hasIntersect = true;
     }
+
+	return hasIntersect;
 }
 
 
@@ -1159,118 +1199,8 @@ void Mesh<VertData,TriData>::IsctProblem::marshallArithmeticInput(
     marshallArithmeticInput(input.tri[2], t2);
 }
 
-/*************************/
-//#define USE_ORIGINAL_CODE
-#ifndef USE_ORIGINAL_CODE
-
-//DGM: we replace the very smart and tricky exterior algebra code (which fails sometimes :(
-//by a naive line/triangle intersection code). Hopefully, this part of Cork will be fixed one day!
-
-const double SMALL_NUM  = 1.0e-8; // to avoid division overflow
-
-bool intersect3D_EdgeEdge(		const Vec3d& A0,
-								const Vec3d& A1,
-								const Vec3d& B0,
-								const Vec3d& B1 )
-{
-	//Find lambda and mu such that:
-	//A = p0+lambda(p1-p0)
-	//B = p2+mu(p3-p2)
-	//(lambda, mu) = argmin(||A-B||²)
-	Vec3d p02 = A0-B0;
-	Vec3d p32 = B1-B0;
-	Vec3d p10 = A1-A0;
-	double denom = (dot(p10,p10) * dot(p32,p32)) - (dot(p32,p10) * dot(p32,p10));
-	if (fabs(denom) < SMALL_NUM)
-		return false;
-	double num = (dot(p02,p32) * dot(p32,p10)) - (dot(p02,p10) * dot(p32,p32));
-	double lambda = num / denom;
-	
-	num = dot(p02,p32) + (lambda*dot(p32,p10));
-	denom = dot(p32,p32);
-	if (fabs(denom) < SMALL_NUM)
-		return false;
-	double mu = num / denom;
-
-	return (lambda > 0.0 && lambda < 1.0) && (mu > 0.0 && mu < 1.0);
-}
-
-//Source: http://geomalgorithms.com/a06-_intersect-2.html
-
-// intersect3D_EdgeTriangle(): find the 3D intersection of a ray with a triangle
-//    Input:  an edge defined by E0 and E1, and a triangle defined by T0, T1 and T2
-//    Return: -1 = triangle is degenerate (a segment or point)
-//             0 =  disjoint (no intersect)
-//             1 =  intersect in unique point
-//             2 =  are in the same plane
-int intersect3D_EdgeTriangle(	const Vec3d& E0,
-								const Vec3d& E1,
-								const Vec3d& T0,
-								const Vec3d& T1,
-								const Vec3d& T2 )
-{
-	// get triangle edge vectors and plane normal
-	Vec3d u = T1 - T0;
-	Vec3d v = T2 - T0;
-	Vec3d n = cross(u,v);			// cross product
-	if (max(abs(n)) == 0)			// triangle is degenerate
-		return -1;					// do not deal with this case
-
-	Vec3d dir = E1 - E0;			// edge 'direction' vector
-	Vec3d w0 = E0 - T0;
-	double a = -dot(n,w0);
-	double b =  dot(n,dir);
-
-	if (fabs(b) < SMALL_NUM)		// edge is parallel to triangle plane
-	{     
-		if (a == 0)					// edge lies in triangle plane
-		{
-			//TODO: we still want to test the intersection?!
-			//if (intersect3D_EdgeEdge(E0,E1,T0,T1))
-			//	return 1;
-			//if (intersect3D_EdgeEdge(E0,E1,T1,T2))
-			//	return 1;
-			//if (intersect3D_EdgeEdge(E0,E1,T2,T0))
-			//	return 1;
-			return 0;
-		}
-		else return 0;				// edge disjoint from plane
-	}
-
-	// get intersect point of edge with triangle plane
-	double r = a / b;
-	if (r < 0 || r > 1.0)			// edge doesn't realy intersect the triangle plane
-		return 0;					// => no intersect
-
-	Vec3d I = E0 + r * dir;			// intersect point of ray and plane
-
-	// is I inside T?
-	double uu, uv, vv, wu, wv, D;
-	uu = dot(u,u);
-	uv = dot(u,v);
-	vv = dot(v,v);
-	Vec3d w = I - T0;
-	wu = dot(w,u);
-	wv = dot(w,v);
-	D = uv * uv - uu * vv;
-
-	// get and test parametric coords
-	double s, t;
-	s = (uv * wv - vv * wu) / D;
-	if (s < 0.0 || s > 1.0)			// I is outside T
-		return 0;
-	t = (uv * wu - uu * wv) / D;
-	if (t < 0.0 || (s + t) > 1.0)	// I is outside T
-		return 0;
-
-	return 1;						// I is in T
-}
-
-/************************/
-#endif
-
 template<class VertData, class TriData>
-bool Mesh<VertData,TriData>::IsctProblem::checkIsct(Eptr e, Tptr t) const
+bool Mesh<VertData,TriData>::IsctProblem::checkIsct(Eptr e, Tptr t)
 {
     // simple bounding box cull; for acceleration, not correctness
     BBox3d      ebox        = buildBox(e);
@@ -1284,35 +1214,23 @@ bool Mesh<VertData,TriData>::IsctProblem::checkIsct(Eptr e, Tptr t) const
     if(hasCommonVert(e, t))
                 return      false;
     
-#ifdef USE_ORIGINAL_CODE
     Empty3d::TriEdgeIn input;
     marshallArithmeticInput(input, e, t);
-    //bool empty = Empty3d::isEmpty(input);
-    bool empty = Empty3d::emptyExact(input);
-    return !empty;
+
+//#define USE_ORIGINAL_CODE
+#ifdef USE_ORIGINAL_CODE
+    //bool empty = empty3d.isEmpty(input);
+    bool empty = empty3d.emptyExact(input);
 #else
-    Vec3d p0 = vPos(t->verts[0]);
-    Vec3d p1 = vPos(t->verts[1]);
-    Vec3d p2 = vPos(t->verts[2]);
-    Vec3d e0 = vPos(e->verts[0]);
-    Vec3d e1 = vPos(e->verts[1]);
-	int isect = intersect3D_EdgeTriangle(e0,e1,p0,p1,p2);
-	if (isect == -1)
-	{
-		Empty3d::degeneracy_count++;
-	}
-	else if (isect != 0)
-	{
-		return true;
-	}
-	return false;
+    bool empty = empty3d.emptyApprox(input);
 #endif
+    return !empty;
 }
 
 template<class VertData, class TriData>
 bool Mesh<VertData,TriData>::IsctProblem::checkIsct(
     Tptr t0, Tptr t1, Tptr t2
-) const {
+) {
     // This function should only be called if we've already
     // identified that the intersection edges
     //      (t0,t1), (t0,t2), (t1,t2)
@@ -1334,8 +1252,8 @@ bool Mesh<VertData,TriData>::IsctProblem::checkIsct(
     
     Empty3d::TriTriTriIn input;
     marshallArithmeticInput(input, t0, t1, t2);
-    //bool empty = Empty3d::isEmpty(input);
-    bool empty = Empty3d::emptyExact(input);
+    //bool empty = empty3d.isEmpty(input);
+    bool empty = empty3d.emptyExact(input);
     return !empty;
 }
 
@@ -1344,7 +1262,11 @@ Vec3d Mesh<VertData,TriData>::IsctProblem::computeCoords(Eptr e, Tptr t) const
 {
     Empty3d::TriEdgeIn input;
     marshallArithmeticInput(input, e, t);
-    Vec3d coords = Empty3d::coordsExact(input);
+#ifdef USE_ORIGINAL_CODE
+    Vec3d coords = empty3d.coordsExact(input);
+#else
+    Vec3d coords = empty3d.coordsApprox(input);
+#endif
     return coords;
 }
 
@@ -1354,7 +1276,7 @@ Vec3d Mesh<VertData,TriData>::IsctProblem::computeCoords(
 ) const {
     Empty3d::TriTriTriIn input;
     marshallArithmeticInput(input, t0, t1, t2);
-    Vec3d coords = Empty3d::coordsExact(input);
+    Vec3d coords = empty3d.coordsExact(input);
     return coords;
 }
 

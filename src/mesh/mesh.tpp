@@ -218,7 +218,7 @@ bool Mesh<VertData,TriData>::isClosed()
 
 
 
-static inline
+/*static inline
 bool contains(const ShortVec<uint, 8> &list, uint item)
 {
 	for(uint k=0; k!=list.size(); ++k)
@@ -228,6 +228,7 @@ bool contains(const ShortVec<uint, 8> &list, uint item)
 	}
 	return false;
 }
+//*/
 
 template<class VertData, class TriData>
 typename Mesh<VertData,TriData>::NeighborCache

@@ -155,7 +155,7 @@ private: // data
 };
 
 
-static inline double triArea(
+inline double triArea(
     Vec3d a, Vec3d b, Vec3d c
 ) {
     return len(cross(b-a, c-a));
@@ -304,7 +304,7 @@ void Mesh<VertData,TriData>::BoolProblem::doDeleteAndFlip(
 
 
 
-static TriCode lambdaUnion(byte data)
+inline TriCode lambdaUnion(byte data)
 {
 	if((data & 2) == 2)     // part of op 0/1 INSIDE op 1/0
 		return DELETE_TRI;
@@ -323,7 +323,7 @@ void Mesh<VertData,TriData>::boolUnion(Mesh &rhs)
 	bprob.doDeleteAndFlip(lambdaUnion);
 }
 
-static TriCode lambdaDiff(byte data)
+inline TriCode lambdaDiff(byte data)
 {
 	if(	data == 2 ||         // part of op 0 INSIDE op 1
 		data == 1)           // part of op 1 OUTSIDE op 0
@@ -344,7 +344,7 @@ void Mesh<VertData,TriData>::boolDiff(Mesh &rhs)
     bprob.doDeleteAndFlip(lambdaDiff);
 }
 
-static TriCode lambdaIsct(byte data)
+inline TriCode lambdaIsct(byte data)
 {
 	if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
 		return DELETE_TRI;
@@ -362,7 +362,7 @@ void Mesh<VertData,TriData>::boolIsct(Mesh &rhs)
     bprob.doDeleteAndFlip(lambdaIsct);
 }
 
-static TriCode lambdaXor(byte data)
+inline TriCode lambdaXor(byte data)
 {
 	if((data & 2) == 0)     // part of op 0/1 OUTSIDE op 1/0
 		return KEEP_TRI;

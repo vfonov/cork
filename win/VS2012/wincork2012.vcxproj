@@ -140,7 +140,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\accel\aabvh.h" />
-    <ClInclude Include="..\..\src\cork.h" />
     <ClInclude Include="..\..\src\file_formats\files.h" />
     <ClInclude Include="..\..\src\isct\absext4.h" />
     <ClInclude Include="..\..\src\isct\empty3d.h" />
@@ -172,7 +171,6 @@
     <None Include="..\..\src\rawmesh\rawMesh.tpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\cork.cpp" />
     <ClCompile Include="..\..\src\file_formats\files.cpp" />
     <ClCompile Include="..\..\src\file_formats\ifs.cpp" />
     <ClCompile Include="..\..\src\file_formats\off.cpp" />
