@@ -43,6 +43,9 @@ endif
 RM  := rm
 CP  := cp
 
+# Flag for handling << and >> operators
+CONFIG = -DSUPPORT_TOPO_STREAM_OPERATORS
+
 # +--------------+
 # | Option Flags |
 # +--------------+
