@@ -17,3 +17,6 @@ win/wincork/*.opensdf
 # in case you're on mac
 .DS_Store
 
+# build directory for cmake
+build
+
