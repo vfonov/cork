@@ -40,7 +40,8 @@ see https://www.gnu.org/licenses/.  */
 
 /* For size_t */
 #include <stddef.h>
-
+/* for CHAR_BIT */
+#include <values.h> 
 #if defined (__cplusplus)
 extern "C" {
 #endif
