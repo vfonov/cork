@@ -25,6 +25,7 @@
 // +-------------------------------------------------------------------------
 #pragma once
 
+#ifndef USE_MINI_GMP
 #ifdef _WIN32
 #pragma warning(disable: 4800)
 #pragma warning(disable: 4244)
@@ -33,6 +34,9 @@
 #pragma warning(default: 4800)
 #else
 #include <gmpxx.h>
+#endif
+#else 
+#include <mini-gmpxx.h>
 #endif
 
 #include <iostream>
