@@ -35,7 +35,8 @@
 #else
 #include <gmpxx.h>
 #endif
-#else 
+#else
+#define MINI_GMP
 #include <mini-gmpxx.h>
 #endif
 

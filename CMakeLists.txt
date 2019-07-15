@@ -27,8 +27,8 @@ IF(USE_MINI_GMP)
     include_directories(contrib/gmp-6.1.2/mini-gmp)
     
     SET(MINI_GMP_SOURCES    contrib/gmp-6.1.2/mini-gmp/mini-gmp.c
-        contrib/gmp-6.1.2/mini-gmp/mini-gmp.h
-        contrib/gmp-6.1.2/mini-gmp/mini-gmpxx.h
+                            contrib/gmp-6.1.2/mini-gmp/mini-gmp.h
+                            contrib/gmp-6.1.2/mini-gmp/mini-gmpxx.h
     )
 ELSE(USE_MINI_GMP)
     SET(MINI_GMP_SRC )
