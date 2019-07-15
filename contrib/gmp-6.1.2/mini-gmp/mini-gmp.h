@@ -41,9 +41,9 @@ see https://www.gnu.org/licenses/.  */
 /* For size_t */
 #include <stddef.h>
 /* for CHAR_BIT */
-#ifdef HAVE_VALUES
-#include <values.h> 
-#endif 
+#ifdef HAVE_VALUES_H
+#include <values.h>
+#endif /*HAVE_VALUES_H*/
 #if defined (__cplusplus)
 extern "C" {
 #endif

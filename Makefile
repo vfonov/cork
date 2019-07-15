@@ -35,11 +35,15 @@ PLATFORM := $(shell uname)
 # | Programs |
 # +----------+
 CPP11_FLAGS := -std=c++11
-CC  := clang
-CXX := clang++
 ifeq ($(PLATFORM),Darwin) # on mac
+    CC  := clang
+    CXX := clang++
     CPP11_FLAGS := $(CPP11_FLAGS) -stdlib=libc++ -Wno-c++11-extensions
+else
+    CC  := cc
+    CXX := c++
 endif
+
 RM  := rm
 CP  := cp
 
@@ -53,7 +57,7 @@ CONFIG = -DSUPPORT_TOPO_STREAM_OPERATORS
 ifeq ($(PLATFORM),Darwin)
   CONFIG  := $(CONFIG) -DMACOSX
 else
-  CONFIG  := $(CONFIG) -DHAVE_VALUES
+  CONFIG  := $(CONFIG) -DHAVE_VALUES_H
 endif
 
 # include paths (flattens the hierarchy for include directives)

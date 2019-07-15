@@ -18,10 +18,10 @@ IF(USE_MINI_GMP)
 
     # need to check if volume.h is present
     INCLUDE(CheckIncludeFiles)
-    CHECK_INCLUDE_FILES(value.h  HAVE_VALUE_H)
+    CHECK_INCLUDE_FILES(values.h  HAVE_VALUES_H)
 
-    IF(HAVE_VALUE_H)
-    add_definitions(-DHAVE_VALUE_H)
+    IF(HAVE_VALUES_H)
+    add_definitions(-DHAVE_VALUES_H)
     ENDIF()
 
     include_directories(contrib/gmp-6.1.2/mini-gmp)
