@@ -53,14 +53,15 @@ CONFIG = -DSUPPORT_TOPO_STREAM_OPERATORS
 ifeq ($(PLATFORM),Darwin)
   CONFIG  := $(CONFIG) -DMACOSX
 else
-  CONFIG  := $(CONFIG)
+  CONFIG  := $(CONFIG) -DHAVE_VALUES
 endif
 
 # include paths (flattens the hierarchy for include directives)
 INC       := -I src/ $(addprefix -I src/,$(SUBDIRECTORIES))
 # get the location of GMP header files from makeConstants include file
 GMPINC    := -I $(GMP_INC_DIR)
-INC       := $(INC) $(GMPINC)
+MINIGMPINC:= -I contrib/gmp-6.1.2/mini-gmp/ -DUSE_MINI_GMP
+INC       := $(INC) $(MINIGMPINC)#$(GMPINC)
 
 # use the second line to disable profiling instrumentation
 # PROFILING := -pg
@@ -75,8 +76,8 @@ GMPLD     := -L$(GMP_LIB_DIR) -lgmpxx -lgmp
 # static version...
 #GMPLD     := $(GMP_LIB_DIR)/libgmpxx.a $(GMP_LIB_DIR)/libgmp.a
 
-LINK         := $(CXXFLAGS) $(GMPLD)
-LINKD        := $(CXXDFLAGS) $(GMPLD)
+LINK         := $(CXXFLAGS) #$(GMPLD)
+LINKD        := $(CXXDFLAGS) #$(GMPLD)
 ifeq ($(PLATFORM),Darwin)
   LINK  := $(LINK) -Wl,-no_pie
   LINKD := $(LINK) -Wl,-no_pie
@@ -154,14 +155,18 @@ DEPENDS := $(addprefix depend/,$(addsuffix .d,$(ALL_SRCS)))
 # +--------------------------------+
 
 OBJ               := $(addprefix obj/,$(addsuffix .o,$(SRCS))) \
-                     obj/isct/triangle.o
+                     obj/isct/triangle.o \
+                     obj/mini-gmp.o
 DEBUG             := $(addprefix debug/,$(addsuffix .o,$(SRCS))) \
-                     obj/isct/triangle.o
+                     obj/isct/triangle.o \
+                     obj/mini-gmp.o
 
 MAIN_OBJ          := $(addprefix obj/,$(addsuffix .o,$(MAIN_SRC))) \
-                     obj/isct/triangle.o
+                     obj/isct/triangle.o \
+                     obj/mini-gmp.o
 MAIN_DEBUG        := $(addprefix debug/,$(addsuffix .o,$(MAIN_SRC))) \
-                     obj/isct/triangle.o
+                     obj/isct/triangle.o \
+                     obj/mini-gmp.o
 
 LIB_TARGET_NAME   := cork
 
@@ -202,14 +207,22 @@ obj/isct/triangle.o: src/isct/triangle.c
                -Wall -DANSI_DECLARATORS \
                -o obj/isct/triangle.o -c src/isct/triangle.c
 
+obj/mini-gmp.o: contrib/gmp-6.1.2/mini-gmp/mini-gmp.c
+	@$(CC) $(CCFLAGS) -O2  -o obj/mini-gmp.o -c contrib/gmp-6.1.2/mini-gmp/mini-gmp.c
+
+
 # +------------------------------------+
 # | Generic Source->Object Build Rules |
 # +------------------------------------+
 obj/%.o: src/%.cpp
-	@echo "Compiling $@"
+	@echo "Compiling $@ from $<  $(CXXFLAGS)"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-debug/%.o: src/%.cpp
+obj/%.o: src/%.c
+	@echo "Compiling $@ from $< $(CXXFLAGS)"
+	@$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+debug/%.o: src/%.cp from $<p
 	@echo "Compiling $@"
 	@$(CXX) $(CXXDFLAGS) -o $@ -c $<
 

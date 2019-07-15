@@ -7,8 +7,22 @@ set(CMAKE_CXX_STANDARD 11)
 
 OPTION(USE_MINI_GMP "Use mini-gmp instead of gmp or mprr" ON)
 
+
+
+add_definitions(-DSUPPORT_TOPO_STREAM_OPERATORS)
+
+
+
 IF(USE_MINI_GMP)
     add_definitions(-DUSE_MINI_GMP)
+
+    # need to check if volume.h is present
+    INCLUDE(CheckIncludeFiles)
+    CHECK_INCLUDE_FILES(value.h  HAVE_VALUE_H)
+
+    IF(HAVE_VALUE_H)
+    add_definitions(-DHAVE_VALUE_H)
+    ENDIF()
 
     include_directories(contrib/gmp-6.1.2/mini-gmp)
     
@@ -33,7 +47,6 @@ include_directories(src src/file_formats src/mesh src/util src/math src/rawmesh 
 
 SET_SOURCE_FILES_PROPERTIES( src/isct/triangle.c PROPERTIES COMPILE_FLAGS "-Wno-format -DNO_TIMER -DREDUCED -DCDT_ONLY -DTRILIBRARY -DANSI_DECLARATORS" )
 
-
 SET(CORK_SOURCES 
     src/file_formats/files.cpp
     src/file_formats/ifs.cpp
@@ -41,7 +54,6 @@ SET(CORK_SOURCES
     src/util/log.cpp
     src/util/timer.cpp
     src/cork.cpp
-    src/main.cpp
     src/isct/empty3d.cpp
     src/isct/triangle.c
     src/isct/quantization.cpp
@@ -73,15 +85,18 @@ SET(CORK_HEADERS
     src/isct/fixint.h
 )
 
-ADD_EXECUTABLE(cork 
-    ${CORK_SOURCES} ${CORK_HEADERS} ${MINI_GMP_SOURCES}
+
+ADD_LIBRARY(cork ${CORK_SOURCES} ${CORK_HEADERS} ${MINI_GMP_SOURCES} )
+
+ADD_EXECUTABLE(cork_exe 
+    src/main.cpp
 )
 
 #ADD_EXECUTABLE(test-cork 
 #    src/test_main.cpp
 #)
 
-#TARGET_LINK_LIBRARIES(cork triangle)
+TARGET_LINK_LIBRARIES(cork_exe cork)
 
 
 ADD_EXECUTABLE(off2obj
